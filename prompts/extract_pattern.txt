@@ -1,0 +1,19 @@
+以下のユーザーとAIの会話を分析し、ユーザーの思考パターンを抽出してください。
+
+タイトル: {title}
+日時: {created_at}
+
+会話:
+{content}
+
+JSON形式のみ出力:
+{{
+  "question_style": "質問の立て方の傾向を1-2文で",
+  "deepening_points": ["深掘りしたポイント"],
+  "decision_criteria": ["判断基準として現れたもの"],
+  "recurring_themes": ["繰り返し現れるテーマ"],
+  "thinking_habits": ["思考の癖"],
+  "values_expressed": ["表出された価値観"],
+  "knowledge_gaps": ["知識不足を感じた領域"],
+  "action_tendency": "行動傾向（慎重/即断/構造化先行 等）"
+}}

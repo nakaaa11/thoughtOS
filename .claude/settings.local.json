@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv sync:*)",
+      "Bash(where uv:*)",
+      "Bash(pip --version)",
+      "Bash(pip install:*)",
+      "Bash(uv run:*)",
+      "Bash(uv pip:*)",
+      "Bash(PYTHONIOENCODING=utf-8 uv run python -c \":*)"
+    ]
+  }
+}

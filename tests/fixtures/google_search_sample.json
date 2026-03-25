@@ -1,0 +1,25 @@
+[
+  {"header": "Search", "title": "Searched for Python デコレータ 使い方", "titleUrl": "https://www.google.com/search?q=Python+%E3%83%87%E3%82%B3%E3%83%AC%E3%83%BC%E3%82%BF", "time": "2025-01-15T09:30:00.000Z", "products": ["Search"]},
+  {"header": "Search", "title": "Searched for Python デコレータ クラス", "titleUrl": "https://www.google.com/search?q=Python+%E3%83%87%E3%82%B3%E3%83%AC%E3%83%BC%E3%82%BF+%E3%82%AF%E3%83%A9%E3%82%B9", "time": "2025-01-15T09:35:00.000Z", "products": ["Search"]},
+  {"header": "Search", "title": "Searched for functools.wraps 必要性", "titleUrl": "https://www.google.com/search?q=functools.wraps", "time": "2025-01-15T09:40:00.000Z", "products": ["Search"]},
+  {"header": "Search", "title": "Searched for Python property デコレータ", "titleUrl": "https://www.google.com/search?q=Python+property", "time": "2025-01-15T09:50:00.000Z", "products": ["Search"]},
+  {"header": "Search", "title": "Searched for Python dataclass", "titleUrl": "https://www.google.com/search?q=Python+dataclass", "time": "2025-01-15T09:55:00.000Z", "products": ["Search"]},
+
+  {"header": "Search", "title": "Searched for FX ボリンジャーバンド 戦略", "titleUrl": "https://www.google.com/search?q=FX+BB", "time": "2025-01-16T13:00:00.000Z", "products": ["Search"]},
+  {"header": "Search", "title": "Searched for ボリンジャーバンド 逆張り", "titleUrl": "https://www.google.com/search?q=BB+reverse", "time": "2025-01-16T13:05:00.000Z", "products": ["Search"]},
+  {"header": "Search", "title": "Searched for Python backtrader インストール", "titleUrl": "https://www.google.com/search?q=backtrader", "time": "2025-01-16T13:10:00.000Z", "products": ["Search"]},
+  {"header": "Search", "title": "Searched for backtrader ボリンジャーバンド", "titleUrl": "https://www.google.com/search?q=backtrader+BB", "time": "2025-01-16T13:20:00.000Z", "products": ["Search"]},
+  {"header": "Search", "title": "Searched for FX バックテスト 勝率", "titleUrl": "https://www.google.com/search?q=backtest+winrate", "time": "2025-01-16T13:25:00.000Z", "products": ["Search"]},
+  {"header": "Search", "title": "Searched for MQL5 EA 自動売買", "titleUrl": "https://www.google.com/search?q=MQL5+EA", "time": "2025-01-16T13:30:00.000Z", "products": ["Search"]},
+
+  {"header": "Search", "title": "Searched for React Hooks ベストプラクティス", "titleUrl": "https://www.google.com/search?q=React+Hooks", "time": "2025-01-18T19:00:00.000Z", "products": ["Search"]},
+  {"header": "Search", "title": "Searched for useEffect 依存配列 無限ループ", "titleUrl": "https://www.google.com/search?q=useEffect+loop", "time": "2025-01-18T19:05:00.000Z", "products": ["Search"]},
+  {"header": "Search", "title": "Searched for React カスタムフック 設計", "titleUrl": "https://www.google.com/search?q=custom+hook", "time": "2025-01-18T19:10:00.000Z", "products": ["Search"]},
+  {"header": "Search", "title": "Searched for useSWR vs React Query", "titleUrl": "https://www.google.com/search?q=useSWR+vs+ReactQuery", "time": "2025-01-18T19:15:00.000Z", "products": ["Search"]},
+  {"header": "Search", "title": "Searched for TanStack Query v5 migration", "titleUrl": "https://www.google.com/search?q=tanstack+v5", "time": "2025-01-18T19:20:00.000Z", "products": ["Search"]},
+  {"header": "Search", "title": "Searched for React Server Components", "titleUrl": "https://www.google.com/search?q=RSC", "time": "2025-01-18T19:25:00.000Z", "products": ["Search"]},
+  {"header": "Search", "title": "Searched for Next.js App Router", "titleUrl": "https://www.google.com/search?q=nextjs+app+router", "time": "2025-01-18T19:28:00.000Z", "products": ["Search"]},
+
+  {"header": "Search", "title": "Searched for Docker PostgreSQL セットアップ", "titleUrl": "https://www.google.com/search?q=docker+postgres", "time": "2025-01-20T11:00:00.000Z", "products": ["Search"]},
+  {"header": "Search", "title": "Searched for pgvector インストール方法", "titleUrl": "https://www.google.com/search?q=pgvector+install", "time": "2025-01-20T11:10:00.000Z", "products": ["Search"]}
+]

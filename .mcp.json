@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "thinkos": {
+      "command": "uv",
+      "args": ["run", "python", "scripts/run_mcp.py"]
+    }
+  }
+}

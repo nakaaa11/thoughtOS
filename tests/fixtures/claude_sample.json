@@ -1,0 +1,193 @@
+[
+  {
+    "uuid": "conv-001",
+    "name": "Pythonデコレータの使い方",
+    "created_at": "2025-01-15T10:00:00Z",
+    "updated_at": "2025-01-15T10:30:00Z",
+    "model": "claude-3-5-sonnet-20241022",
+    "chat_messages": [
+      {
+        "uuid": "msg-001",
+        "sender": "human",
+        "text": "Pythonのデコレータについて教えてください",
+        "created_at": "2025-01-15T10:00:00Z",
+        "content": [],
+        "attachments": [],
+        "files": []
+      },
+      {
+        "uuid": "msg-002",
+        "sender": "assistant",
+        "text": "デコレータは関数を受け取り、拡張した関数を返す関数です。@記法で使います。",
+        "created_at": "2025-01-15T10:01:00Z",
+        "content": [],
+        "attachments": [],
+        "files": []
+      },
+      {
+        "uuid": "msg-003",
+        "sender": "human",
+        "text": "クラスにも使えますか？",
+        "created_at": "2025-01-15T10:05:00Z",
+        "content": [],
+        "attachments": [],
+        "files": []
+      },
+      {
+        "uuid": "msg-004",
+        "sender": "assistant",
+        "text": "はい、クラスデコレータも作れます。__call__メソッドを定義すれば関数のように使えます。",
+        "created_at": "2025-01-15T10:06:00Z",
+        "content": [],
+        "attachments": [],
+        "files": []
+      }
+    ]
+  },
+  {
+    "uuid": "conv-002",
+    "name": "FX自動売買戦略",
+    "created_at": "2025-01-16T14:00:00Z",
+    "updated_at": "2025-01-16T15:00:00Z",
+    "model": "claude-3-5-sonnet-20241022",
+    "chat_messages": [
+      {
+        "uuid": "msg-005",
+        "role": "user",
+        "text": "",
+        "created_at": "2025-01-16T14:00:00Z",
+        "content": [{"type": "text", "text": "FXの自動売買でボリンジャーバンドを使った戦略を考えたい"}],
+        "attachments": [],
+        "files": []
+      },
+      {
+        "uuid": "msg-006",
+        "role": "assistant",
+        "text": "ボリンジャーバンドを使った戦略にはいくつかのアプローチがあります。逆張り戦略が一般的です。",
+        "created_at": "2025-01-16T14:02:00Z",
+        "content": [],
+        "attachments": [],
+        "files": []
+      },
+      {
+        "uuid": "msg-007",
+        "role": "user",
+        "text": "バックテストの実装方法も教えて",
+        "created_at": "2025-01-16T14:10:00Z",
+        "content": [],
+        "attachments": [],
+        "files": []
+      },
+      {
+        "uuid": "msg-008",
+        "role": "assistant",
+        "text": "",
+        "created_at": "2025-01-16T14:12:00Z",
+        "content": [
+          {"type": "text", "text": "Pythonのbacktraderライブラリが便利です。"},
+          {"type": "tool_use", "name": "code_execution", "id": "tool-1"}
+        ],
+        "attachments": [],
+        "files": []
+      }
+    ]
+  },
+  {
+    "uuid": "conv-003",
+    "name": "英語メール添削",
+    "created_at": "2025-01-17T09:00:00Z",
+    "updated_at": "2025-01-17T09:15:00Z",
+    "model": "claude-3-5-sonnet-20241022",
+    "chat_messages": [
+      {
+        "uuid": "msg-009",
+        "sender": "human",
+        "text": "以下の英語メールを添削してください: Dear Mr. Smith, I want to ask about the project schedule.",
+        "created_at": "2025-01-17T09:00:00Z",
+        "content": [],
+        "attachments": [],
+        "files": []
+      },
+      {
+        "uuid": "msg-010",
+        "sender": "assistant",
+        "text": "添削しました: Dear Mr. Smith, I would like to inquire about the project timeline.",
+        "created_at": "2025-01-17T09:01:00Z",
+        "content": [],
+        "attachments": [],
+        "files": []
+      }
+    ]
+  },
+  {
+    "uuid": "conv-004",
+    "name": "React Hooksの設計パターン",
+    "created_at": "2025-01-18T20:00:00Z",
+    "updated_at": "2025-01-18T21:00:00Z",
+    "model": "claude-3-5-sonnet-20241022",
+    "chat_messages": [
+      {
+        "uuid": "msg-011",
+        "sender": "human",
+        "text": "useEffectの依存配列のベストプラクティスを教えて",
+        "created_at": "2025-01-18T20:00:00Z",
+        "content": [],
+        "attachments": [],
+        "files": []
+      },
+      {
+        "uuid": "msg-012",
+        "sender": "assistant",
+        "text": "依存配列には、useEffect内で使用するすべてのリアクティブな値を含めるべきです。",
+        "created_at": "2025-01-18T20:01:00Z",
+        "content": [],
+        "attachments": [],
+        "files": []
+      },
+      {
+        "uuid": "msg-013",
+        "sender": "human",
+        "text": "カスタムフックに切り出すタイミングは？",
+        "created_at": "2025-01-18T20:10:00Z",
+        "content": [],
+        "attachments": [],
+        "files": []
+      },
+      {
+        "uuid": "msg-014",
+        "sender": "assistant",
+        "text": "ロジックが複数コンポーネントで再利用される場合や、コンポーネントが複雑になりすぎた場合です。",
+        "created_at": "2025-01-18T20:11:00Z",
+        "content": [],
+        "attachments": [],
+        "files": []
+      },
+      {
+        "uuid": "msg-015",
+        "sender": "human",
+        "text": "具体的なコード例を見せて",
+        "created_at": "2025-01-18T20:20:00Z",
+        "content": [],
+        "attachments": [],
+        "files": []
+      },
+      {
+        "uuid": "msg-016",
+        "sender": "assistant",
+        "text": "useFetchというカスタムフックの例を示します。loading, error, dataの状態を管理します。",
+        "created_at": "2025-01-18T20:22:00Z",
+        "content": [],
+        "attachments": [],
+        "files": []
+      }
+    ]
+  },
+  {
+    "uuid": "conv-005",
+    "name": "",
+    "created_at": "2025-01-19T08:00:00Z",
+    "updated_at": null,
+    "model": "claude-3-5-sonnet-20241022",
+    "chat_messages": []
+  }
+]

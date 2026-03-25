@@ -1,0 +1,23 @@
+[project]
+name = "thought-os"
+version = "0.2.0"
+description = "思考プロセス統合ナレッジベース"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.40.0",
+    "voyageai>=0.3.0",
+    "psycopg[binary]>=3.2",
+    "pgvector>=0.3",
+    "python-dotenv>=1.0",
+    "mcp>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+]
+web = [
+    "fastapi>=0.115",
+    "uvicorn>=0.32",
+]

@@ -1,0 +1,37 @@
+{
+  "Browser History": [
+    {"title": "Python Decorators - Real Python", "url": "https://realpython.com/primer-on-decorators/", "time_usec": 1736931600000000, "page_transition": "LINK"},
+    {"title": "Searched for Python デコレータ", "url": "https://www.google.com/search?q=Python+decorator", "time_usec": 1736931300000000, "page_transition": "TYPED"},
+    {"title": "functools - Python docs", "url": "https://docs.python.org/3/library/functools.html", "time_usec": 1736932200000000, "page_transition": "LINK"},
+    {"title": "Python Decorator Tutorial - DataCamp", "url": "https://www.datacamp.com/tutorial/decorators-python", "time_usec": 1736932800000000, "page_transition": "LINK"},
+    {"title": "Understanding Python Decorators in 12 Easy Steps", "url": "https://medium.com/python-decorators-guide", "time_usec": 1736933400000000, "page_transition": "LINK"},
+    {"title": "Python @property decorator", "url": "https://www.programiz.com/python-programming/property", "time_usec": 1736934000000000, "page_transition": "LINK"},
+
+    {"title": "Bollinger Bands Trading Strategy Guide", "url": "https://www.investopedia.com/articles/trading/bollinger-bands.asp", "time_usec": 1737018000000000, "page_transition": "LINK"},
+    {"title": "Searched for ボリンジャーバンド", "url": "https://www.google.com/search?q=bollinger+bands", "time_usec": 1737017700000000, "page_transition": "TYPED"},
+    {"title": "Backtrader Documentation", "url": "https://www.backtrader.com/docu/", "time_usec": 1737018600000000, "page_transition": "LINK"},
+    {"title": "Python Algorithmic Trading with Backtrader", "url": "https://algotrading101.com/learn/backtrader-python/", "time_usec": 1737019200000000, "page_transition": "LINK"},
+    {"title": "MQL5 Expert Advisors Tutorial", "url": "https://www.mql5.com/en/articles/ea-tutorial", "time_usec": 1737019800000000, "page_transition": "LINK"},
+    {"title": "FX自動売買の始め方 - OANDA", "url": "https://www.oanda.jp/lab-education/beginners/automated-trading/", "time_usec": 1737020400000000, "page_transition": "LINK"},
+
+    {"title": "React Hooks Reference - React Docs", "url": "https://react.dev/reference/react/hooks", "time_usec": 1737226800000000, "page_transition": "LINK"},
+    {"title": "useEffect Complete Guide - Dan Abramov", "url": "https://overreacted.io/a-complete-guide-to-useeffect/", "time_usec": 1737227400000000, "page_transition": "LINK"},
+    {"title": "Building Custom Hooks - React Docs", "url": "https://react.dev/learn/reusing-logic-with-custom-hooks", "time_usec": 1737228000000000, "page_transition": "LINK"},
+    {"title": "TanStack Query Official Documentation v5", "url": "https://tanstack.com/query/latest/docs/framework/react/overview", "time_usec": 1737228600000000, "page_transition": "LINK"},
+    {"title": "SWR - React Hooks for Data Fetching", "url": "https://swr.vercel.app/", "time_usec": 1737229200000000, "page_transition": "LINK"},
+    {"title": "React Server Components Explained", "url": "https://www.joshwcomeau.com/react/server-components/", "time_usec": 1737229800000000, "page_transition": "LINK"},
+    {"title": "Next.js App Router Documentation", "url": "https://nextjs.org/docs/app", "time_usec": 1737230400000000, "page_transition": "LINK"},
+
+    {"title": "pgvector - GitHub", "url": "https://github.com/pgvector/pgvector", "time_usec": 1737399600000000, "page_transition": "LINK"},
+    {"title": "Docker Hub - pgvector/pgvector", "url": "https://hub.docker.com/r/pgvector/pgvector", "time_usec": 1737400200000000, "page_transition": "LINK"},
+    {"title": "Searched for pgvector setup", "url": "https://www.google.com/search?q=pgvector+setup", "time_usec": 1737399300000000, "page_transition": "TYPED"},
+    {"title": "Vector Search with PostgreSQL and pgvector", "url": "https://www.timescale.com/blog/pgvector-tutorial/", "time_usec": 1737400800000000, "page_transition": "LINK"},
+    {"title": "psycopg3 Documentation", "url": "https://www.psycopg.org/psycopg3/docs/", "time_usec": 1737401400000000, "page_transition": "LINK"},
+
+    {"title": "YouTube", "url": "https://www.youtube.com/", "time_usec": 1737410000000000, "page_transition": "TYPED"},
+    {"title": "Twitter / X", "url": "https://twitter.com/home", "time_usec": 1737415000000000, "page_transition": "TYPED"},
+    {"title": "Gmail", "url": "https://mail.google.com/mail/", "time_usec": 1737420000000000, "page_transition": "TYPED"},
+    {"title": "Amazon.co.jp", "url": "https://www.amazon.co.jp/", "time_usec": 1737425000000000, "page_transition": "TYPED"},
+    {"title": "Notion - Project Board", "url": "https://www.notion.so/workspace/project-board", "time_usec": 1737430000000000, "page_transition": "TYPED"}
+  ]
+}
