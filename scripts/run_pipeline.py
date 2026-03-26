@@ -11,6 +11,7 @@ from src.config import load_settings
 from src.db import ThoughtDB
 from src.embedder import Embedder
 from src.pipeline import Pipeline
+from src.parsers.chrome_history_parser import ChromeHistoryParser, find_chrome_history_db
 
 
 def cmd_parse(args, settings):
@@ -134,6 +135,63 @@ def cmd_search(args, settings):
         print(f"ベクトル検索エラー: {e}")
 
 
+def cmd_fetch_chrome(args, settings):
+    """Chrome履歴DBから本日分を取得してDBに投入"""
+    from datetime import datetime, timezone, timedelta
+
+    db_path = Path(args.db_path) if args.db_path else find_chrome_history_db()
+    if db_path is None or not db_path.exists():
+        print("エラー: Chrome履歴DBが見つかりません。--db-path で指定してください。")
+        sys.exit(1)
+
+    parser = ChromeHistoryParser(time_window_minutes=settings.session_time_window_minutes)
+
+    # 取得範囲
+    now = datetime.now(tz=timezone.utc)
+    if args.days > 1:
+        start = (now - timedelta(days=args.days - 1)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+    else:
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    print(f"Chrome履歴取得: {start.strftime('%Y-%m-%d %H:%M')} 〜 {now.strftime('%Y-%m-%d %H:%M')}")
+    entries = parser.parse_range(start, now, db_path)
+    print(f"  取得: ブラウズ+検索 合計 {len(entries)} エントリ")
+
+    # DBへ投入
+    pipeline = Pipeline(settings)
+    db = ThoughtDB(settings.database_url)
+    inserted = 0
+    import json as _json
+    for entry in entries:
+        result = db.insert_entry({
+            "source_type": entry.source_type,
+            "source_id": entry.source_id,
+            "title": entry.title,
+            "content": entry.content,
+            "summary": None,
+            "category": None,
+            "tags": [],
+            "thinking_pattern": None,
+            "embedding": None,
+            "source_metadata": _json.dumps(entry.source_metadata),
+            "created_at": entry.created_at,
+            "updated_at": entry.updated_at,
+        })
+        if result:
+            inserted += 1
+
+    print(f"  DB投入: {inserted}件（重複スキップ: {len(entries) - inserted}件）")
+
+    if not args.parse_only:
+        print("処理中（要約・カテゴリ分類・embedding）...")
+        result = pipeline.run_process_unprocessed()
+        print(json.dumps(result, indent=2, ensure_ascii=False, default=str))
+    else:
+        print("--parse-only 指定のため処理はスキップしました。")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Thought OS パイプライン")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -158,6 +216,13 @@ def main():
     subparsers.add_parser("stats", help="DB統計を表示")
 
     # search
+    # fetch_chrome
+    p_chrome = subparsers.add_parser("fetch_chrome", help="Chrome履歴から本日分を自動取得")
+    p_chrome.add_argument("--db-path", default=None, help="Chrome履歴DBのパス（省略時は自動検出）")
+    p_chrome.add_argument("--days", type=int, default=1, help="取得する日数（デフォルト: 1=本日のみ）")
+    p_chrome.add_argument("--parse-only", action="store_true", help="DB投入のみ（API処理をスキップ）")
+
+    # search
     p_search = subparsers.add_parser("search", help="検索テスト")
     p_search.add_argument("query", help="検索クエリ")
 
@@ -171,6 +236,7 @@ def main():
         "full": cmd_full,
         "stats": cmd_stats,
         "search": cmd_search,
+        "fetch_chrome": cmd_fetch_chrome,
     }
 
     commands[args.command](args, settings)
