@@ -35,11 +35,16 @@ class GoogleSearchParser(BaseParser):
         queries = []
         for item in data:
             title = item.get("title", "")
-            if not title.startswith("Searched for "):
-                continue
-
-            query_text = title.removeprefix("Searched for ")
             time_str = item.get("time", "")
+
+            # English format: "Searched for X"
+            if title.startswith("Searched for "):
+                query_text = title.removeprefix("Searched for ")
+            # Japanese YouTube format: "「X」を検索しました"
+            elif title.startswith("「") and "」を検索しました" in title:
+                query_text = title[1 : title.index("」を検索しました")]
+            else:
+                continue
 
             try:
                 dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))

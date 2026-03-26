@@ -4,7 +4,7 @@ import os
 
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 
 @dataclass
@@ -27,6 +27,13 @@ class Settings:
     min_turns_for_analysis: int = 3
     session_time_window_minutes: int = 30
     session_similarity_threshold: float = 0.7
+
+    # Preprocessing filters
+    min_content_chars: int = 30
+    min_browse_visit_count: int = 2
+
+    # Model overrides per stage
+    categorizer_model: str = "claude-haiku-4-5-20251001"
 
     # Paths
     data_dir: Path = Path("data")
@@ -52,4 +59,7 @@ def load_settings() -> Settings:
         session_similarity_threshold=float(
             os.getenv("SESSION_SIMILARITY_THRESHOLD", "0.7")
         ),
+        min_content_chars=int(os.getenv("MIN_CONTENT_CHARS", "30")),
+        min_browse_visit_count=int(os.getenv("MIN_BROWSE_VISIT_COUNT", "2")),
+        categorizer_model=os.getenv("CATEGORIZER_MODEL", "claude-haiku-4-5-20251001"),
     )

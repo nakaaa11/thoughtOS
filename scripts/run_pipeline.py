@@ -29,7 +29,8 @@ def cmd_parse(args, settings):
 def cmd_process(args, settings):
     """未処理エントリをClaude API + Voyage AIで処理"""
     pipeline = Pipeline(settings)
-    result = pipeline.run_process_unprocessed()
+    limit = args.limit if hasattr(args, "limit") and args.limit else None
+    result = pipeline.run_process_unprocessed(limit=limit)
     print(json.dumps(result, indent=2, ensure_ascii=False, default=str))
 
 
@@ -58,6 +59,21 @@ def cmd_full(args, settings):
 
     result = pipeline.run_full([input_path])
     print(json.dumps(result, indent=2, ensure_ascii=False, default=str))
+
+
+def cmd_takeout(args, settings):
+    """Google Takeout ZIPを処理してDBに投入"""
+    pipeline = Pipeline(settings)
+    total = 0
+    for zip_path_str in args.zip_paths:
+        zip_path = Path(zip_path_str)
+        if not zip_path.exists():
+            print(f"エラー: {zip_path} が見つかりません")
+            continue
+        print(f"\n=== {zip_path.name} ===")
+        count = pipeline.run_takeout_zip(zip_path)
+        total += count
+    print(f"\n合計: {total}件をDBに投入しました")
 
 
 def cmd_stats(args, settings):
@@ -202,7 +218,8 @@ def main():
     p_parse.add_argument("--source", choices=["claude", "google_search", "google_browse"])
 
     # process
-    subparsers.add_parser("process", help="未処理エントリを処理")
+    p_process = subparsers.add_parser("process", help="未処理エントリを処理")
+    p_process.add_argument("--limit", type=int, help="処理件数の上限")
 
     # sessions
     subparsers.add_parser("sessions", help="思考セッションを生成")
@@ -211,6 +228,10 @@ def main():
     p_full = subparsers.add_parser("full", help="全ステップ一括実行")
     p_full.add_argument("input_path", help="入力ファイルパス")
     p_full.add_argument("--source", default="auto")
+
+    # takeout
+    p_takeout = subparsers.add_parser("takeout", help="Google Takeout ZIPを処理")
+    p_takeout.add_argument("zip_paths", nargs="+", help="Takeout ZIPファイルパス（複数可）")
 
     # stats
     subparsers.add_parser("stats", help="DB統計を表示")
@@ -234,6 +255,7 @@ def main():
         "process": cmd_process,
         "sessions": cmd_sessions,
         "full": cmd_full,
+        "takeout": cmd_takeout,
         "stats": cmd_stats,
         "search": cmd_search,
         "fetch_chrome": cmd_fetch_chrome,

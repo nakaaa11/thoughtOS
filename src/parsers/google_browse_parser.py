@@ -45,17 +45,29 @@ class GoogleBrowseParser(BaseParser):
     def _extract_pages(self, history: list[dict]) -> list[dict]:
         pages = []
         for item in history:
-            url = item.get("url", "")
-            if self._is_search_engine(url):
+            url = item.get("url", "") or item.get("titleUrl", "")
+            if not url or self._is_search_engine(url):
                 continue
 
             title = item.get("title", "")
-            time_usec = item.get("time_usec", 0)
+            # YouTube watch history: "XXX を視聴しました" → strip suffix
+            if title.endswith("を視聴しました"):
+                title = title[: -len("を視聴しました")].strip()
 
-            if not time_usec:
+            # Chrome history uses time_usec (microseconds); YouTube uses ISO 8601 time
+            time_usec = item.get("time_usec", 0)
+            time_str = item.get("time", "")
+
+            if time_usec:
+                dt = datetime.fromtimestamp(time_usec / 1_000_000, tz=timezone.utc)
+            elif time_str:
+                try:
+                    dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
+                except (ValueError, AttributeError):
+                    continue
+            else:
                 continue
 
-            dt = datetime.fromtimestamp(time_usec / 1_000_000, tz=timezone.utc)
             pages.append({"url": url, "title": title, "time": dt})
         return pages
 
@@ -96,11 +108,17 @@ class GoogleBrowseParser(BaseParser):
         id_source = f"{first_time.isoformat()}_{urls[0]}"
         source_id = hashlib.sha256(id_source.encode()).hexdigest()[:16]
 
+        # content: "タイトル — URL" 形式（タイトルなしの場合はURLのみ）
+        lines = []
+        for p in group:
+            t = p["title"].strip() if p["title"] else ""
+            lines.append(f"{t} — {p['url']}" if t else p["url"])
+
         return RawEntry(
             source_type="google_browse",
             source_id=source_id,
             title=representative_title,
-            content="\n".join(urls),
+            content="\n".join(lines),
             created_at=first_time.isoformat(),
             updated_at=last_time.isoformat() if len(group) > 1 else None,
             source_metadata={

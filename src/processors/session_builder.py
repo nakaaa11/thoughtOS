@@ -128,7 +128,7 @@ class SessionBuilder:
             return None
 
         # embeddingの平均ベクトル
-        embeddings = [e["embedding"] for e in entries if e.get("embedding")]
+        embeddings = [e["embedding"] for e in entries if e.get("embedding") is not None]
         avg_embedding = self._average_embedding(embeddings) if embeddings else None
 
         entry_ids = [str(e["id"]) for e in entries]

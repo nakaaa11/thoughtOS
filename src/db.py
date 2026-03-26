@@ -76,7 +76,7 @@ class ThoughtDB:
         category: str | None = None,
     ) -> list[dict]:
         conn = self._get_conn()
-        conditions = ["(title % %(query)s OR summary % %(query)s)"]
+        conditions = ["(title %% %(query)s OR summary %% %(query)s)"]
         params: dict = {"query": query, "limit": limit}
 
         if source_type:
@@ -173,9 +173,11 @@ class ThoughtDB:
         rows = conn.execute(sql).fetchall()
         return [{"tag": r[0], "count": r[1]} for r in rows]
 
-    def get_unprocessed_entries(self) -> list[dict]:
+    def get_unprocessed_entries(self, limit: int | None = None) -> list[dict]:
         conn = self._get_conn()
         sql = "SELECT * FROM thought_entries WHERE summary IS NULL ORDER BY created_at"
+        if limit is not None:
+            sql += f" LIMIT {limit}"
         rows = conn.execute(sql).fetchall()
         desc = conn.execute("SELECT * FROM thought_entries LIMIT 0").description
         return [self._row_to_dict(r, desc) for r in rows]

@@ -1,5 +1,7 @@
 import json
+import tempfile
 import time
+import zipfile
 from pathlib import Path
 
 from .config import Settings
@@ -22,7 +24,14 @@ class Pipeline:
         self.db = ThoughtDB(settings.database_url)
         self.claude = ClaudeClient(settings.anthropic_api_key, settings.claude_model)
         self.embedder = Embedder(settings.voyage_api_key, settings.voyage_model)
-        self.categorizer = Categorizer(self.claude, settings.batch_size)
+        # カテゴリ分類には安価なモデル（Haiku）を使用
+        cat_model = getattr(settings, "categorizer_model", settings.claude_model)
+        self.claude_cheap = (
+            ClaudeClient(settings.anthropic_api_key, cat_model)
+            if cat_model != settings.claude_model
+            else self.claude
+        )
+        self.categorizer = Categorizer(self.claude_cheap, settings.batch_size)
         self.summarizer = Summarizer(self.claude)
         self.pattern_extractor = PatternExtractor(
             self.claude, settings.min_turns_for_analysis
@@ -83,9 +92,9 @@ class Pipeline:
 
         return inserted
 
-    def run_process_unprocessed(self) -> dict:
+    def run_process_unprocessed(self, limit: int | None = None) -> dict:
         """未処理エントリのみ処理"""
-        entries = self.db.get_unprocessed_entries()
+        entries = self.db.get_unprocessed_entries(limit=limit)
         if not entries:
             print("未処理エントリなし")
             return {"entries_processed": 0, "sessions_created": 0, "cost": {}}
@@ -113,13 +122,18 @@ class Pipeline:
         # 3. 要約 + タグ（1件ずつ）
         print("要約・タグ生成中...")
         summaries = {}
+        skipped = 0
         for i, raw in enumerate(raw_entries):
+            if self._is_trivial_entry(raw):
+                skipped += 1
+                continue
             result = self.summarizer.summarize(raw)
             if result:
                 summaries[raw.source_id] = result
-            if i > 0 and i % 5 == 0:
-                print(f"  {i}/{len(raw_entries)}件完了")
+            if i > 0 and i % 10 == 0:
+                print(f"  {i}/{len(raw_entries)}件完了（スキップ: {skipped}件）")
             time.sleep(self.settings.rate_limit_delay)
+        print(f"  要約スキップ: {skipped}件（軽微エントリ）")
 
         # 4. パターン抽出（Claudeのみ）
         print("思考パターン抽出中...")
@@ -181,15 +195,102 @@ class Pipeline:
         for session in sessions:
             self.db.insert_session(session)
 
-        cost = self.claude.usage_summary()
-        print(f"完了: {len(entries)}件処理, {len(sessions)}セッション生成")
+        main_cost = self.claude.usage_summary()
+        if self.claude_cheap is not self.claude:
+            cheap = self.claude_cheap.usage_summary()
+            # Haikuの実単価で再計算（ClaudeClientはSonnet単価固定のため）
+            haiku_cost = cheap["input_tokens"] * 0.80 / 1_000_000 + cheap["output_tokens"] * 4.0 / 1_000_000
+            cost = {
+                "input_tokens": main_cost["input_tokens"] + cheap["input_tokens"],
+                "output_tokens": main_cost["output_tokens"] + cheap["output_tokens"],
+                "estimated_cost_usd": round(main_cost["estimated_cost_usd"] + haiku_cost, 4),
+            }
+        else:
+            cost = main_cost
+
+        print(f"完了: {len(entries)}件処理（スキップ: {skipped}件）, {len(sessions)}セッション生成")
         print(f"コスト: ${cost['estimated_cost_usd']}")
 
         return {
             "entries_processed": len(entries),
+            "entries_skipped": skipped,
             "sessions_created": len(sessions),
             "cost": cost,
         }
+
+    def run_takeout_zip(self, zip_path: Path) -> int:
+        """Google Takeout ZIPから関連ファイルを抽出してパース・DB投入"""
+        # Takeout内のファイルパスとソースタイプのマッピング（より具体的なパターンを先に）
+        TAKEOUT_MAP = {
+            "検索履歴.json": "google_search",
+            "watch-history.json": "google_browse",
+            "Chrome/履歴.json": "google_browse",
+            "Chrome/BrowserHistory.json": "google_browse",
+        }
+
+        total = 0
+        with zipfile.ZipFile(zip_path) as zf:
+            names = zf.namelist()
+            for name in names:
+                if not name.endswith(".json"):
+                    continue
+
+                source_type = None
+                for pattern, stype in TAKEOUT_MAP.items():
+                    if pattern in name:
+                        source_type = stype
+                        break
+                if not source_type:
+                    continue
+
+                print(f"  抽出: {name} → {source_type}")
+                with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="wb") as tmp:
+                    tmp.write(zf.read(name))
+                    tmp_path = Path(tmp.name)
+
+                try:
+                    parser = self.parsers[source_type]
+                    entries = parser.parse(tmp_path)
+                    print(f"    パース: {len(entries)}件")
+                    inserted = 0
+                    for entry in entries:
+                        entry_dict = {
+                            "source_type": entry.source_type,
+                            "source_id": entry.source_id,
+                            "title": entry.title,
+                            "content": entry.content,
+                            "summary": None,
+                            "category": None,
+                            "tags": [],
+                            "thinking_pattern": None,
+                            "embedding": None,
+                            "source_metadata": json.dumps(entry.source_metadata),
+                            "created_at": entry.created_at,
+                            "updated_at": entry.updated_at,
+                        }
+                        if self.db.insert_entry(entry_dict):
+                            inserted += 1
+                    print(f"    投入: {inserted}件（重複スキップ含む）")
+                    total += inserted
+                finally:
+                    tmp_path.unlink(missing_ok=True)
+
+        return total
+
+    def _is_trivial_entry(self, raw: "RawEntry") -> bool:
+        """要約APIをスキップすべき軽微エントリかどうかを判定"""
+        content = raw.content or ""
+        if len(content.strip()) < self.settings.min_content_chars:
+            return True
+        if raw.source_type == "google_browse":
+            visit_count = (
+                raw.source_metadata.get("visit_count", 1)
+                if isinstance(raw.source_metadata, dict)
+                else 1
+            )
+            if visit_count < self.settings.min_browse_visit_count:
+                return True
+        return False
 
     def _detect_source_type(self, path: Path) -> str | None:
         """ファイルパスからソースタイプを推測"""
@@ -206,6 +307,8 @@ class Pipeline:
             data = json.loads(path.read_text(encoding="utf-8"))
             if isinstance(data, dict) and "Browser History" in data:
                 return "google_browse"
+            if isinstance(data, dict) and ("chat_messages" in data or "uuid" in data):
+                return "claude"
             if isinstance(data, list) and data:
                 first = data[0]
                 if "chat_messages" in first or "uuid" in first:
