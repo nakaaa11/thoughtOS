@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thought OS</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg2: #161b22;
+    --bg3: #21262d;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --text3: #6e7681;
+    --claude: #8b5cf6;
+    --claude-bg: #1e1030;
+    --search: #3b82f6;
+    --search-bg: #0c1a3a;
+    --browse: #10b981;
+    --browse-bg: #071f18;
+    --accent: #f78166;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* ── Header ── */
+  header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; }
+  header h1 { font-size: 18px; font-weight: 600; white-space: nowrap; }
+  .stat-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .chip.claude { background: var(--claude-bg); color: var(--claude); border: 1px solid var(--claude); }
+  .chip.google_search { background: var(--search-bg); color: var(--search); border: 1px solid var(--search); }
+  .chip.google_browse { background: var(--browse-bg); color: var(--browse); border: 1px solid var(--browse); }
+  .chip.session { background: #1a1200; color: #f59e0b; border: 1px solid #f59e0b; }
+  .header-spacer { flex: 1; }
+  .date-range { color: var(--text3); font-size: 12px; white-space: nowrap; }
+
+  /* ── Search Bar ── */
+  .search-bar { padding: 12px 20px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; gap: 8px; }
+  .search-wrap { flex: 1; position: relative; }
+  .search-wrap input { width: 100%; padding: 8px 12px 8px 36px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 14px; outline: none; transition: border-color .2s; }
+  .search-wrap input:focus { border-color: #58a6ff; }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text3); pointer-events: none; }
+  select { padding: 8px 10px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 13px; cursor: pointer; outline: none; }
+  select:focus { border-color: #58a6ff; }
+  .btn { padding: 8px 14px; border-radius: var(--radius); border: 1px solid var(--border); cursor: pointer; font-size: 13px; font-weight: 500; transition: all .15s; }
+  .btn-period { background: var(--bg3); color: var(--text2); }
+  .btn-period:hover, .btn-period.active { background: var(--bg3); border-color: #58a6ff; color: var(--text); }
+  .btn-sessions { background: var(--bg3); color: #f59e0b; border-color: #f59e0b44; }
+  .btn-sessions:hover { background: #1a120044; }
+
+  /* ── Layout ── */
+  .layout { display: flex; height: calc(100vh - 104px); overflow: hidden; }
+  aside { width: 220px; min-width: 220px; border-right: 1px solid var(--border); overflow-y: auto; padding: 12px; background: var(--bg2); }
+  aside::-webkit-scrollbar { width: 4px; }
+  aside::-webkit-scrollbar-track { background: transparent; }
+  aside::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .sidebar-section { margin-bottom: 20px; }
+  .sidebar-title { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+
+  /* ── Category List ── */
+  .cat-item { display: flex; justify-content: space-between; padding: 4px 6px; border-radius: 5px; cursor: pointer; color: var(--text2); font-size: 12px; transition: background .1s; }
+  .cat-item:hover { background: var(--bg3); color: var(--text); }
+  .cat-item.active { background: var(--bg3); color: var(--text); }
+  .cat-count { color: var(--text3); }
+
+  /* ── Tag Cloud ── */
+  .tag-cloud { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tag { padding: 3px 8px; border-radius: 4px; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); font-size: 11px; cursor: pointer; transition: all .1s; white-space: nowrap; }
+  .tag:hover, .tag.active { background: var(--border); color: var(--text); border-color: #58a6ff; }
+
+  /* ── Period Picker ── */
+  .period-inputs { display: flex; flex-direction: column; gap: 6px; }
+  .period-inputs input { width: 100%; padding: 6px 8px; background: var(--bg3); border: 1px solid var(--border); border-radius: 5px; color: var(--text); font-size: 12px; outline: none; }
+  .period-inputs input:focus { border-color: #58a6ff; }
+  .btn-go { width: 100%; margin-top: 6px; padding: 6px; background: var(--bg3); border: 1px solid var(--border); border-radius: 5px; color: var(--text2); font-size: 12px; cursor: pointer; }
+  .btn-go:hover { border-color: #58a6ff; color: var(--text); }
+
+  /* ── Main Results ── */
+  main { flex: 1; overflow-y: auto; padding: 16px; }
+  main::-webkit-scrollbar { width: 6px; }
+  main::-webkit-scrollbar-track { background: transparent; }
+  main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .results-header { color: var(--text3); font-size: 12px; margin-bottom: 12px; }
+  .results-grid { display: flex; flex-direction: column; gap: 10px; }
+
+  /* ── Entry Card ── */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; transition: border-color .15s, background .15s; }
+  .card:hover { border-color: #58a6ff44; background: var(--bg3); }
+  .card-header { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+  .source-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; margin-top: 1px; }
+  .source-badge.claude { background: var(--claude-bg); color: var(--claude); }
+  .source-badge.google_search { background: var(--search-bg); color: var(--search); }
+  .source-badge.google_browse { background: var(--browse-bg); color: var(--browse); }
+  .card-title { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.4; }
+  .card-meta { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+  .card-summary { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .card-tag { font-size: 11px; color: var(--text3); background: var(--bg); border: 1px solid var(--border); padding: 1px 6px; border-radius: 3px; }
+
+  /* ── Session Card ── */
+  .session-card { background: #0d100a; border: 1px solid #f59e0b44; border-radius: var(--radius); padding: 14px 16px; cursor: pointer; transition: border-color .15s; }
+  .session-card:hover { border-color: #f59e0b; }
+  .session-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .session-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; background: #1a1200; color: #f59e0b; }
+  .session-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .session-narrative { font-size: 13px; color: var(--text2); line-height: 1.6; margin: 6px 0 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .session-meta { font-size: 11px; color: var(--text3); }
+
+  /* ── Empty State ── */
+  .empty { text-align: center; padding: 60px 20px; color: var(--text3); }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-text { font-size: 15px; }
+
+  /* ── Loading ── */
+  .loading { text-align: center; padding: 40px; color: var(--text3); }
+  .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: #58a6ff; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Modal ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 200; align-items: flex-start; justify-content: center; padding: 40px 20px; overflow-y: auto; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 760px; padding: 24px; position: relative; }
+  .modal-close { position: absolute; top: 16px; right: 16px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text2); cursor: pointer; padding: 4px 10px; font-size: 13px; }
+  .modal-close:hover { color: var(--text); }
+  .modal h2 { font-size: 18px; font-weight: 600; margin-bottom: 8px; padding-right: 60px; line-height: 1.4; }
+  .modal-meta { font-size: 12px; color: var(--text3); margin-bottom: 16px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .modal-section { margin-bottom: 20px; }
+  .modal-section-title { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+  .modal-summary { font-size: 14px; color: var(--text); line-height: 1.7; background: var(--bg3); padding: 12px; border-radius: 6px; }
+  .modal-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .modal-tag { font-size: 12px; color: var(--text2); background: var(--bg3); border: 1px solid var(--border); padding: 3px 8px; border-radius: 4px; }
+
+  /* Thinking Pattern */
+  .pattern-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pattern-item { background: var(--bg3); border-radius: 6px; padding: 10px 12px; }
+  .pattern-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .pattern-value { font-size: 13px; color: var(--text); line-height: 1.5; }
+  .pattern-list { list-style: none; }
+  .pattern-list li { font-size: 12px; color: var(--text2); padding: 1px 0; }
+  .pattern-list li::before { content: "· "; color: var(--text3); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <h1>🧠 Thought OS</h1>
+  <div class="stat-chips" id="stat-chips"></div>
+  <div class="header-spacer"></div>
+  <div class="date-range" id="date-range"></div>
+</header>
+
+<!-- Search Bar -->
+<div class="search-bar">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="search-input" placeholder="過去の思考を検索... (Enter または 300ms で自動検索)">
+  </div>
+  <select id="source-filter">
+    <option value="">すべてのソース</option>
+    <option value="claude">Claude</option>
+    <option value="google_search">Google検索</option>
+    <option value="google_browse">ブラウズ</option>
+  </select>
+  <select id="category-filter">
+    <option value="">すべてのカテゴリ</option>
+    <option>技術学習</option>
+    <option>キャリア・仕事</option>
+    <option>アプリ開発</option>
+    <option>文書・コミュニケーション</option>
+    <option>思考整理・ブレスト</option>
+    <option>調査・リサーチ</option>
+    <option>その他</option>
+  </select>
+  <button class="btn btn-sessions" id="btn-sessions" onclick="loadSessions()">💡 セッション</button>
+  <button class="btn btn-period active" id="btn-recent" onclick="loadRecent()">🕐 最近</button>
+</div>
+
+<!-- Layout -->
+<div class="layout">
+  <!-- Sidebar -->
+  <aside>
+    <div class="sidebar-section">
+      <div class="sidebar-title">カテゴリ</div>
+      <div id="cat-list"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">タグ</div>
+      <div class="tag-cloud" id="tag-cloud"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">期間検索</div>
+      <div class="period-inputs">
+        <input type="date" id="period-start" value="2025-01-01">
+        <input type="date" id="period-end" value="2026-03-27">
+        <button class="btn-go" onclick="loadPeriod()">この期間を表示</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main id="main">
+    <div class="loading"><div class="spinner"></div></div>
+  </main>
+</div>
+
+<!-- Entry Detail Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal-content">
+    <button class="modal-close" onclick="closeModalDirect()">✕ 閉じる</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────
+let activeTag = null;
+let searchTimer = null;
+
+// ─── Init ────────────────────────────────────────
+async function init() {
+  await Promise.all([loadStats(), loadTags()]);
+  loadRecent();
+}
+
+// ─── Stats ───────────────────────────────────────
+async function loadStats() {
+  const data = await api('/api/stats');
+  const chips = document.getElementById('stat-chips');
+  chips.innerHTML = data.by_source.map(s =>
+    `<span class="chip ${s.source_type}" title="${s.processed}件処理済み">${label(s.source_type)} ${s.total.toLocaleString()}</span>`
+  ).join('') + (data.session_count > 0
+    ? `<span class="chip session">💡 セッション ${data.session_count}</span>`
+    : '');
+
+  const dr = data.date_range;
+  if (dr.start) {
+    document.getElementById('date-range').textContent = `${dr.start} 〜 ${dr.end}`;
+  }
+
+  // カテゴリリスト
+  const catEl = document.getElementById('cat-list');
+  catEl.innerHTML = data.top_categories.map(c =>
+    `<div class="cat-item" onclick="searchCategory('${c.category}')">
+      <span>${c.category}</span><span class="cat-count">${c.count}</span>
+    </div>`
+  ).join('');
+}
+
+// ─── Tags ────────────────────────────────────────
+async function loadTags() {
+  const tags = await api('/api/tags?limit=50');
+  const cloud = document.getElementById('tag-cloud');
+  cloud.innerHTML = tags.map(t =>
+    `<span class="tag" onclick="searchTag('${esc(t.tag)}')" data-tag="${esc(t.tag)}">${t.tag} <span style="color:var(--text3)">${t.count}</span></span>`
+  ).join('');
+}
+
+// ─── Search ──────────────────────────────────────
+document.getElementById('search-input').addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  if (!e.target.value.trim()) { loadRecent(); return; }
+  searchTimer = setTimeout(doSearch, 300);
+});
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { clearTimeout(searchTimer); doSearch(); }
+});
+document.getElementById('source-filter').addEventListener('change', () => {
+  if (document.getElementById('search-input').value.trim()) doSearch();
+});
+document.getElementById('category-filter').addEventListener('change', () => {
+  if (document.getElementById('search-input').value.trim()) doSearch();
+  else {
+    const cat = document.getElementById('category-filter').value;
+    if (cat) searchCategory(cat);
+  }
+});
+
+async function doSearch() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) return;
+  clearActiveTag();
+  showLoading();
+  const source = document.getElementById('source-filter').value;
+  const category = document.getElementById('category-filter').value;
+  const results = await api('/api/search', 'POST', { query: q, source_type: source || null, category: category || null, limit: 30 });
+  renderEntries(results, `「${q}」の検索結果`);
+}
+
+async function searchTag(tag) {
+  clearActiveTag();
+  activeTag = tag;
+  document.querySelectorAll('.tag').forEach(el => {
+    el.classList.toggle('active', el.dataset.tag === tag);
+  });
+  document.getElementById('search-input').value = '';
+  showLoading();
+  const results = await api(`/api/tag/${encodeURIComponent(tag)}`);
+  renderEntries(results, `タグ: #${tag}`);
+}
+
+async function searchCategory(cat) {
+  document.getElementById('category-filter').value = cat;
+  clearActiveTag();
+  showLoading();
+  // カテゴリはキーワード検索で近似
+  const results = await api('/api/search', 'POST', { query: cat, category: cat, limit: 30 });
+  renderEntries(results, `カテゴリ: ${cat}`);
+}
+
+// ─── Recent / Period ─────────────────────────────
+async function loadRecent() {
+  clearActiveTag();
+  document.getElementById('search-input').value = '';
+  showLoading();
+  const end = new Date().toISOString().slice(0, 10);
+  const start = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+  const results = await api(`/api/period?start=${start}&end=${end}&limit=40`);
+  renderEntries(results, '最近90日のエントリ（新しい順）');
+}
+
+async function loadPeriod() {
+  clearActiveTag();
+  const start = document.getElementById('period-start').value;
+  const end = document.getElementById('period-end').value;
+  if (!start || !end) return;
+  showLoading();
+  const source = document.getElementById('source-filter').value;
+  const url = `/api/period?start=${start}&end=${end}&limit=60${source ? '&source_type=' + source : ''}`;
+  const results = await api(url);
+  renderEntries(results, `${start} 〜 ${end}`);
+}
+
+// ─── Sessions ────────────────────────────────────
+async function loadSessions() {
+  clearActiveTag();
+  document.getElementById('search-input').value = '';
+  showLoading();
+  const sessions = await api('/api/sessions?limit=30');
+  if (!sessions.length) {
+    document.getElementById('main').innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">💡</div>
+        <div class="empty-text">セッションがまだありません<br><span style="font-size:12px;color:var(--text3)">Takeoutデータの処理が完了すると生成されます</span></div>
+      </div>`;
+    return;
+  }
+  const main = document.getElementById('main');
+  main.innerHTML = `<div class="results-header">${sessions.length}件のセッション</div>
+    <div class="results-grid">${sessions.map(renderSessionCard).join('')}</div>`;
+}
+
+function renderSessionCard(s) {
+  const start = s.timeframe_start ? s.timeframe_start.slice(0, 10) : '';
+  const end = s.timeframe_end ? s.timeframe_end.slice(0, 10) : '';
+  const sources = (s.sources || []).map(src => `<span class="source-badge ${src}" style="font-size:10px">${label(src)}</span>`).join(' ');
+  const tags = (s.tags || []).slice(0, 5).map(t => `<span class="card-tag">#${t}</span>`).join('');
+  return `<div class="session-card">
+    <div class="session-header">
+      <span class="session-badge">💡 セッション</span>
+      ${sources}
+      <span style="font-size:11px;color:var(--text3);margin-left:auto">${start}${start !== end ? ' 〜 ' + end : ''}</span>
+    </div>
+    <div class="session-title">${esc(s.topic || '')}</div>
+    <div class="session-narrative">${esc(s.narrative || '')}</div>
+    <div class="card-tags">${tags}</div>
+  </div>`;
+}
+
+// ─── Render Entries ───────────────────────────────
+function renderEntries(entries, title) {
+  const main = document.getElementById('main');
+  if (!entries.length) {
+    main.innerHTML = `<div class="results-header">${esc(title)}</div>
+      <div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">該当するエントリがありません</div></div>`;
+    return;
+  }
+  main.innerHTML = `<div class="results-header">${esc(title)} — ${entries.length}件</div>
+    <div class="results-grid">${entries.map(renderCard).join('')}</div>`;
+}
+
+function renderCard(e) {
+  const src = e.source_type || '';
+  const date = e.created_at ? e.created_at.slice(0, 10) : '';
+  const tags = (e.tags || []).slice(0, 6).map(t => `<span class="card-tag">#${t}</span>`).join('');
+  const cat = e.category ? `<span style="color:var(--text3)"> · ${e.category}</span>` : '';
+  const hasPattern = e.thinking_pattern && Object.keys(e.thinking_pattern).length > 0;
+  const patternBadge = hasPattern ? '<span style="font-size:10px;color:#f59e0b;margin-left:6px">🧠</span>' : '';
+  return `<div class="card" onclick="openEntry('${e.id}')">
+    <div class="card-header">
+      <span class="source-badge ${src}">${label(src)}</span>
+      <span class="card-title">${esc(e.title || '')}${patternBadge}</span>
+    </div>
+    <div class="card-meta">${date}${cat}</div>
+    <div class="card-summary">${esc(e.summary || '（要約なし）')}</div>
+    <div class="card-tags">${tags}</div>
+  </div>`;
+}
+
+// ─── Modal ───────────────────────────────────────
+async function openEntry(id) {
+  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('modal-body').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  const e = await api(`/api/entries/${id}`);
+  renderModal(e);
+}
+
+function renderModal(e) {
+  const src = e.source_type || '';
+  const date = e.created_at ? e.created_at.slice(0, 16).replace('T', ' ') : '';
+  const tags = (e.tags || []).map(t => `<span class="modal-tag">#${t}</span>`).join('');
+  const meta = e.source_metadata || {};
+
+  let patternHtml = '';
+  if (e.thinking_pattern) {
+    const p = typeof e.thinking_pattern === 'string' ? JSON.parse(e.thinking_pattern) : e.thinking_pattern;
+    const listField = (arr) => Array.isArray(arr) && arr.length
+      ? `<ul class="pattern-list">${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`
+      : '<span style="color:var(--text3)">—</span>';
+
+    patternHtml = `<div class="modal-section">
+      <div class="modal-section-title">🧠 思考パターン</div>
+      <div class="pattern-grid">
+        <div class="pattern-item"><div class="pattern-label">質問スタイル</div><div class="pattern-value">${esc(p.question_style || '')}</div></div>
+        <div class="pattern-item"><div class="pattern-label">行動傾向</div><div class="pattern-value">${esc(p.action_tendency || '')}</div></div>
+        <div class="pattern-item"><div class="pattern-label">深掘りポイント</div><div class="pattern-value">${listField(p.deepening_points)}</div></div>
+        <div class="pattern-item"><div class="pattern-label">判断基準</div><div class="pattern-value">${listField(p.decision_criteria)}</div></div>
+        <div class="pattern-item"><div class="pattern-label">繰り返しテーマ</div><div class="pattern-value">${listField(p.recurring_themes)}</div></div>
+        <div class="pattern-item"><div class="pattern-label">思考の癖</div><div class="pattern-value">${listField(p.thinking_habits)}</div></div>
+        <div class="pattern-item"><div class="pattern-label">価値観</div><div class="pattern-value">${listField(p.values_expressed)}</div></div>
+        <div class="pattern-item"><div class="pattern-label">知識ギャップ</div><div class="pattern-value">${listField(p.knowledge_gaps)}</div></div>
+      </div>
+    </div>`;
+  }
+
+  let metaHtml = '';
+  if (src === 'claude' && meta.turn_count) {
+    metaHtml = `<span>${meta.turn_count}ターン</span>`;
+  } else if (src === 'google_search' && meta.query_count) {
+    metaHtml = `<span>${meta.query_count}クエリ</span>`;
+  } else if (src === 'google_browse' && meta.visit_count) {
+    metaHtml = `<span>${meta.visit_count}ページ · ${meta.timespan_minutes}分</span>`;
+  }
+
+  document.getElementById('modal-body').innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span class="source-badge ${src}" style="font-size:11px">${label(src)}</span>
+      ${e.category ? `<span style="font-size:12px;color:var(--text3)">${e.category}</span>` : ''}
+    </div>
+    <h2>${esc(e.title || '')}</h2>
+    <div class="modal-meta">
+      <span>🕐 ${date}</span>
+      ${metaHtml}
+    </div>
+    ${e.summary ? `<div class="modal-section">
+      <div class="modal-section-title">要約</div>
+      <div class="modal-summary">${esc(e.summary)}</div>
+    </div>` : ''}
+    ${tags ? `<div class="modal-section">
+      <div class="modal-section-title">タグ</div>
+      <div class="modal-tags">${tags}</div>
+    </div>` : ''}
+    ${patternHtml}
+  `;
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+// ─── Helpers ─────────────────────────────────────
+function label(src) {
+  return { claude: 'Claude', google_search: '検索', google_browse: 'ブラウズ' }[src] || src;
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function showLoading() {
+  document.getElementById('main').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+}
+function clearActiveTag() {
+  activeTag = null;
+  document.querySelectorAll('.tag.active').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.cat-item.active').forEach(el => el.classList.remove('active'));
+}
+
+async function api(path, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(path, opts);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+// ─── Keyboard ────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModalDirect();
+  if (e.key === '/' && !e.target.closest('input,textarea')) {
+    e.preventDefault();
+    document.getElementById('search-input').focus();
+  }
+});
+
+init();
+</script>
+</body>
+</html>
