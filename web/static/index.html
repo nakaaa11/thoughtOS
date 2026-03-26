@@ -84,7 +84,10 @@
   main::-webkit-scrollbar-track { background: transparent; }
   main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-  .results-header { color: var(--text3); font-size: 12px; margin-bottom: 12px; }
+  .results-header { color: var(--text3); font-size: 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+  .results-header .sort-wrap { display: flex; align-items: center; gap: 6px; color: var(--text3); font-size: 12px; }
+  .results-header select { padding: 3px 8px; font-size: 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 5px; color: var(--text2); cursor: pointer; outline: none; }
+  .results-header select:focus { border-color: #58a6ff; }
   .results-grid { display: flex; flex-direction: column; gap: 10px; }
 
   /* ── Entry Card ── */
@@ -220,6 +223,9 @@
 // ─── State ───────────────────────────────────────
 let activeTag = null;
 let searchTimer = null;
+let currentEntries = [];
+let currentTitle = '';
+let currentSort = 'date-desc';
 
 // ─── Init ────────────────────────────────────────
 async function init() {
@@ -373,14 +379,60 @@ function renderSessionCard(s) {
 
 // ─── Render Entries ───────────────────────────────
 function renderEntries(entries, title) {
+  currentEntries = entries;
+  currentTitle = title;
+  renderCurrentEntries();
+}
+
+function renderCurrentEntries() {
+  const sorted = sortEntries([...currentEntries], currentSort);
   const main = document.getElementById('main');
-  if (!entries.length) {
-    main.innerHTML = `<div class="results-header">${esc(title)}</div>
+  if (!sorted.length) {
+    main.innerHTML = `<div class="results-header"><span>${esc(currentTitle)}</span></div>
       <div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">該当するエントリがありません</div></div>`;
     return;
   }
-  main.innerHTML = `<div class="results-header">${esc(title)} — ${entries.length}件</div>
-    <div class="results-grid">${entries.map(renderCard).join('')}</div>`;
+  main.innerHTML = `
+    <div class="results-header">
+      <span>${esc(currentTitle)} — ${sorted.length}件</span>
+      <div class="sort-wrap">
+        <span>並び替え:</span>
+        <select id="sort-select" onchange="onSortChange(this.value)">
+          <option value="date-desc"${currentSort==='date-desc'?' selected':''}>新しい順</option>
+          <option value="date-asc"${currentSort==='date-asc'?' selected':''}>古い順</option>
+          <option value="title-asc"${currentSort==='title-asc'?' selected':''}>タイトル A→Z</option>
+          <option value="title-desc"${currentSort==='title-desc'?' selected':''}>タイトル Z→A</option>
+          <option value="source"${currentSort==='source'?' selected':''}>ソース別</option>
+        </select>
+      </div>
+    </div>
+    <div class="results-grid">${sorted.map(renderCard).join('')}</div>`;
+}
+
+function sortEntries(entries, mode) {
+  switch (mode) {
+    case 'date-asc':
+      return entries.sort((a, b) => (a.created_at || '') < (b.created_at || '') ? -1 : 1);
+    case 'date-desc':
+      return entries.sort((a, b) => (a.created_at || '') > (b.created_at || '') ? -1 : 1);
+    case 'title-asc':
+      return entries.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'ja'));
+    case 'title-desc':
+      return entries.sort((a, b) => (b.title || '').localeCompare(a.title || '', 'ja'));
+    case 'source':
+      return entries.sort((a, b) => {
+        const order = { claude: 0, google_search: 1, google_browse: 2 };
+        const diff = (order[a.source_type] ?? 9) - (order[b.source_type] ?? 9);
+        return diff !== 0 ? diff : ((a.created_at || '') > (b.created_at || '') ? -1 : 1);
+      });
+    default:
+      return entries;
+  }
+}
+
+function onSortChange(val) {
+  currentSort = val;
+  renderCurrentEntries();
 }
 
 function renderCard(e) {
