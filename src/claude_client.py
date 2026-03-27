@@ -42,9 +42,16 @@ class ClaudeClient:
 
                 return text
 
-            except (anthropic.RateLimitError, anthropic.APIConnectionError, anthropic.InternalServerError):
+            except (anthropic.RateLimitError, anthropic.APIConnectionError):
                 wait = 2 ** (attempt + 1)
                 time.sleep(wait)
+            except anthropic.APIStatusError as e:
+                # 529 Overloaded や 5xx 系サーバーエラーはリトライ
+                if e.status_code >= 500 or e.status_code == 529:
+                    wait = 2 ** (attempt + 1)
+                    time.sleep(wait)
+                else:
+                    raise
             except json.JSONDecodeError:
                 if attempt == max_retries - 1:
                     raise
