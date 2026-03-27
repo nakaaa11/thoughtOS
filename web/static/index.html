@@ -282,6 +282,8 @@ let searchTimer = null;
 let currentEntries = [];
 let currentTitle = '';
 let currentSort = 'date-desc';
+// 現在のビューモードを保持（フィルター変更時に再取得するため）
+let currentView = { mode: 'recent', params: {} };
 
 // ─── Init ────────────────────────────────────────
 async function init() {
@@ -332,14 +334,16 @@ document.getElementById('search-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') { clearTimeout(searchTimer); doSearch(); }
 });
 document.getElementById('source-filter').addEventListener('change', () => {
-  if (document.getElementById('search-input').value.trim()) doSearch();
+  const q = document.getElementById('search-input').value.trim();
+  if (q) doSearch();
+  else reloadCurrentView();
 });
 document.getElementById('category-filter').addEventListener('change', () => {
-  if (document.getElementById('search-input').value.trim()) doSearch();
-  else {
-    const cat = document.getElementById('category-filter').value;
-    if (cat) searchCategory(cat);
-  }
+  const q = document.getElementById('search-input').value.trim();
+  const cat = document.getElementById('category-filter').value;
+  if (q) doSearch();
+  else if (cat) searchCategory(cat);
+  else reloadCurrentView();
 });
 
 async function doSearch() {
@@ -349,6 +353,7 @@ async function doSearch() {
   showLoading();
   const source = document.getElementById('source-filter').value;
   const category = document.getElementById('category-filter').value;
+  currentView = { mode: 'search', params: { q, source, category } };
   const results = await api('/api/search', 'POST', { query: q, source_type: source || null, category: category || null, limit: 30 });
   renderEntries(results, `「${q}」の検索結果`);
 }
@@ -361,6 +366,7 @@ async function searchTag(tag) {
   });
   document.getElementById('search-input').value = '';
   showLoading();
+  currentView = { mode: 'tag', params: { tag } };
   const results = await api(`/api/tag/${encodeURIComponent(tag)}`);
   renderEntries(results, `タグ: #${tag}`);
 }
@@ -381,7 +387,10 @@ async function loadRecent() {
   showLoading();
   const end = new Date().toISOString().slice(0, 10);
   const start = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
-  const results = await api(`/api/period?start=${start}&end=${end}&limit=40`);
+  const source = document.getElementById('source-filter').value;
+  currentView = { mode: 'recent', params: { start, end, source } };
+  const url = `/api/period?start=${start}&end=${end}&limit=40${source ? '&source_type=' + source : ''}`;
+  const results = await api(url);
   renderEntries(results, '最近90日のエントリ（新しい順）');
 }
 
@@ -392,6 +401,7 @@ async function loadPeriod() {
   if (!start || !end) return;
   showLoading();
   const source = document.getElementById('source-filter').value;
+  currentView = { mode: 'period', params: { start, end, source } };
   const url = `/api/period?start=${start}&end=${end}&limit=60${source ? '&source_type=' + source : ''}`;
   const results = await api(url);
   renderEntries(results, `${start} 〜 ${end}`);
@@ -440,12 +450,32 @@ function renderEntries(entries, title) {
   renderCurrentEntries();
 }
 
+function reloadCurrentView() {
+  const v = currentView;
+  if (v.mode === 'search') doSearch();
+  else if (v.mode === 'tag') searchTag(v.params.tag);
+  else if (v.mode === 'period') loadPeriod();
+  else loadRecent();
+}
+
 function renderCurrentEntries() {
   const sorted = sortEntries([...currentEntries], currentSort);
   const main = document.getElementById('main');
   if (!sorted.length) {
+    const source = document.getElementById('source-filter').value;
+    const category = document.getElementById('category-filter').value;
+    const filters = [];
+    if (source) filters.push(`ソース: <strong>${label(source)}</strong>`);
+    if (category) filters.push(`カテゴリ: <strong>${esc(category)}</strong>`);
+    const filterNote = filters.length
+      ? `<div style="font-size:12px;color:var(--text3);margin-top:8px">フィルター: ${filters.join(' / ')} — <span style="cursor:pointer;color:#58a6ff" onclick="clearFilters()">解除する</span></div>`
+      : '';
     main.innerHTML = `<div class="results-header"><span>${esc(currentTitle)}</span></div>
-      <div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">該当するエントリがありません</div></div>`;
+      <div class="empty">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">該当するエントリがありません</div>
+        ${filterNote}
+      </div>`;
     return;
   }
   main.innerHTML = `
@@ -489,6 +519,12 @@ function sortEntries(entries, mode) {
 function onSortChange(val) {
   currentSort = val;
   renderCurrentEntries();
+}
+
+function clearFilters() {
+  document.getElementById('source-filter').value = '';
+  document.getElementById('category-filter').value = '';
+  reloadCurrentView();
 }
 
 function renderCard(e) {
