@@ -2,12 +2,14 @@
 
 import json
 import sys
+import tempfile
+import threading
 from pathlib import Path
 from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, UploadFile, File
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -15,10 +17,14 @@ from pydantic import BaseModel
 from src.config import load_settings
 from src.db import ThoughtDB
 from src.embedder import Embedder
+from src.parsers.file_parser import FileParser, EXTRACTOR_MAP
 
 settings = load_settings()
 db = ThoughtDB(settings.database_url)
 _embedder: Embedder | None = None
+
+# バックグラウンド処理の状態管理
+_process_status: dict = {"running": False, "progress": 0, "total": 0, "done": False, "error": None, "result": None}
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -174,6 +180,132 @@ async def get_sessions(limit: int = 20):
         }
         for r in rows
     ]
+
+
+# ──────────────────────────────────────────────
+# Import
+# ──────────────────────────────────────────────
+ALLOWED_EXTENSIONS = set(EXTRACTOR_MAP.keys())
+
+
+@app.post("/api/import")
+async def import_files(files: list[UploadFile] = File(...)):
+    """ファイルをアップロードしてDBに取り込む（要約・embedding処理なし）"""
+    file_parser = FileParser()
+    inserted_total = 0
+    skipped_total = 0
+    results = []
+
+    for upload in files:
+        filename = upload.filename or "unknown"
+        ext = Path(filename).suffix.lower()
+        if ext not in ALLOWED_EXTENSIONS:
+            results.append({"file": filename, "status": "error", "message": f"未対応の形式: {ext}"})
+            continue
+
+        content = await upload.read()
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+            tmp.write(content)
+            tmp_path = Path(tmp.name)
+        # ファイル名を元のファイル名に偽装（パーサーがファイル名を使うため）
+        tmp_path_named = tmp_path.parent / filename
+        try:
+            tmp_path.rename(tmp_path_named)
+            tmp_path = tmp_path_named
+        except Exception:
+            pass
+
+        try:
+            entries = file_parser.parse(tmp_path)
+            inserted = 0
+            skipped = 0
+            for e in entries:
+                entry_dict = {
+                    "source_type": e.source_type,
+                    "source_id": e.source_id,
+                    "title": e.title,
+                    "content": e.content,
+                    "summary": None,
+                    "category": None,
+                    "tags": [],
+                    "thinking_pattern": None,
+                    "embedding": None,
+                    "source_metadata": json.dumps(e.source_metadata),
+                    "created_at": e.created_at,
+                    "updated_at": e.updated_at,
+                    "file_hash": e.file_hash,
+                }
+                if db.insert_entry(entry_dict):
+                    inserted += 1
+                else:
+                    skipped += 1
+            results.append({
+                "file": filename,
+                "status": "ok",
+                "inserted": inserted,
+                "skipped": skipped,
+            })
+            inserted_total += inserted
+            skipped_total += skipped
+        except Exception as exc:
+            results.append({"file": filename, "status": "error", "message": str(exc)})
+        finally:
+            tmp_path.unlink(missing_ok=True)
+
+    return {
+        "inserted": inserted_total,
+        "skipped": skipped_total,
+        "files": results,
+    }
+
+
+@app.post("/api/process")
+async def start_processing(background_tasks: BackgroundTasks):
+    """未処理エントリの要約・カテゴリ・embedding処理をバックグラウンドで開始"""
+    global _process_status
+    if _process_status["running"]:
+        return {"message": "already_running", **_process_status}
+
+    unprocessed_count = len(db.get_unprocessed_entries())
+    if unprocessed_count == 0:
+        return {"message": "nothing_to_process", "total": 0}
+
+    _process_status = {
+        "running": True, "progress": 0, "total": unprocessed_count,
+        "done": False, "error": None, "result": None,
+    }
+    background_tasks.add_task(_run_pipeline)
+    return {"message": "started", "total": unprocessed_count}
+
+
+@app.get("/api/process/status")
+async def process_status():
+    return _process_status
+
+
+def _run_pipeline():
+    global _process_status
+    try:
+        from src.pipeline import Pipeline
+        pipeline = Pipeline(settings)
+
+        # 進捗をモニタリングするためにsummarizer をラップ
+        original_summarize = pipeline.summarizer.summarize
+
+        def tracked_summarize(raw):
+            result = original_summarize(raw)
+            _process_status["progress"] = _process_status.get("progress", 0) + 1
+            return result
+
+        pipeline.summarizer.summarize = tracked_summarize
+
+        result = pipeline.run_process_unprocessed()
+        _process_status.update({
+            "running": False, "done": True, "result": result,
+            "progress": _process_status["total"],
+        })
+    except Exception as e:
+        _process_status.update({"running": False, "done": True, "error": str(e)})
 
 
 # ──────────────────────────────────────────────

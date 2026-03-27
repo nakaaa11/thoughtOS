@@ -1891,6 +1891,7 @@ dependencies = [
     { name = "pymupdf" },
     { name = "python-docx" },
     { name = "python-dotenv" },
+    { name = "python-multipart" },
     { name = "uvicorn" },
     { name = "voyageai" },
 ]
@@ -1918,6 +1919,7 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24" },
     { name = "python-docx", specifier = ">=1.1" },
     { name = "python-dotenv", specifier = ">=1.0" },
+    { name = "python-multipart", specifier = ">=0.0.22" },
     { name = "uvicorn", specifier = ">=0.42.0" },
     { name = "uvicorn", marker = "extra == 'web'", specifier = ">=0.32" },
     { name = "voyageai", specifier = ">=0.3.0" },

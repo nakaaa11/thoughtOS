@@ -123,10 +123,39 @@
   .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: #58a6ff; border-radius: 50%; animation: spin .7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* ── Import Button ── */
+  .btn-import { background: var(--bg3); color: #10b981; border-color: #10b98144; }
+  .btn-import:hover { background: #071f1844; }
+
   /* ── Modal ── */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 200; align-items: flex-start; justify-content: center; padding: 40px 20px; overflow-y: auto; }
   .modal-overlay.open { display: flex; }
   .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 760px; padding: 24px; position: relative; }
+
+  /* ── Import Modal ── */
+  .import-modal { max-width: 560px; }
+  .drop-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 40px 20px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: #10b981; background: #071f18; }
+  .drop-zone-icon { font-size: 36px; margin-bottom: 10px; }
+  .drop-zone-text { color: var(--text2); font-size: 14px; line-height: 1.6; }
+  .drop-zone-sub { color: var(--text3); font-size: 12px; margin-top: 6px; }
+  .file-list { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .file-item { display: flex; align-items: center; gap: 8px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 13px; }
+  .file-item-name { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-item-size { color: var(--text3); font-size: 11px; white-space: nowrap; }
+  .file-item-remove { color: var(--text3); cursor: pointer; padding: 0 4px; font-size: 16px; line-height: 1; }
+  .file-item-remove:hover { color: var(--accent); }
+  .import-actions { margin-top: 16px; display: flex; gap: 8px; }
+  .btn-primary { background: #10b981; color: #fff; border-color: #10b981; font-weight: 600; }
+  .btn-primary:hover { background: #059669; border-color: #059669; }
+  .btn-primary:disabled { background: var(--bg3); color: var(--text3); border-color: var(--border); cursor: not-allowed; }
+  .import-result { margin-top: 16px; padding: 12px; border-radius: 8px; font-size: 13px; line-height: 1.6; }
+  .import-result.success { background: #071f18; border: 1px solid #10b98144; color: #10b981; }
+  .import-result.error { background: #1a0a0a; border: 1px solid #f8716144; color: #f87171; }
+  .process-bar-wrap { margin-top: 12px; }
+  .process-bar-label { font-size: 12px; color: var(--text3); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .process-bar { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+  .process-bar-fill { height: 100%; background: #10b981; border-radius: 3px; transition: width .3s; }
   .modal-close { position: absolute; top: 16px; right: 16px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text2); cursor: pointer; padding: 4px 10px; font-size: 13px; }
   .modal-close:hover { color: var(--text); }
   .modal h2 { font-size: 18px; font-weight: 600; margin-bottom: 8px; padding-right: 60px; line-height: 1.4; }
@@ -179,6 +208,7 @@
     <option>調査・リサーチ</option>
     <option>その他</option>
   </select>
+  <button class="btn btn-import" onclick="openImportModal()">📥 インポート</button>
   <button class="btn btn-sessions" id="btn-sessions" onclick="loadSessions()">💡 セッション</button>
   <button class="btn btn-period active" id="btn-recent" onclick="loadRecent()">🕐 最近</button>
 </div>
@@ -209,6 +239,32 @@
   <main id="main">
     <div class="loading"><div class="spinner"></div></div>
   </main>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="import-overlay" onclick="closeImportModal(event)">
+  <div class="modal import-modal">
+    <button class="modal-close" onclick="closeImportModalDirect()">✕ 閉じる</button>
+    <h2 style="margin-bottom:16px">📥 ファイルをインポート</h2>
+
+    <div class="drop-zone" id="drop-zone"
+         onclick="document.getElementById('file-input').click()"
+         ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+      <div class="drop-zone-icon">📂</div>
+      <div class="drop-zone-text">クリックまたはドラッグ＆ドロップでファイルを選択</div>
+      <div class="drop-zone-sub">対応形式: .md .txt .pdf .docx .csv .json</div>
+    </div>
+    <input type="file" id="file-input" multiple accept=".md,.markdown,.txt,.text,.pdf,.docx,.csv,.json" style="display:none" onchange="onFileSelect(event)">
+
+    <div class="file-list" id="file-list"></div>
+
+    <div class="import-actions">
+      <button class="btn btn-primary" id="btn-do-import" onclick="doImport()" disabled>インポート</button>
+      <button class="btn" style="background:var(--bg3);color:var(--text2)" onclick="clearFiles()">クリア</button>
+    </div>
+
+    <div id="import-result" style="display:none"></div>
+  </div>
 </div>
 
 <!-- Entry Detail Modal -->
@@ -549,6 +605,178 @@ async function api(path, method = 'GET', body = null) {
   const res = await fetch(path, opts);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
+}
+
+// ─── Import Modal ────────────────────────────────
+let importFiles = [];
+let processTimer = null;
+
+function openImportModal() {
+  document.getElementById('import-overlay').classList.add('open');
+}
+function closeImportModal(e) {
+  if (e.target === document.getElementById('import-overlay')) closeImportModalDirect();
+}
+function closeImportModalDirect() {
+  document.getElementById('import-overlay').classList.remove('open');
+  if (processTimer) { clearInterval(processTimer); processTimer = null; }
+}
+
+function onDragOver(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.add('drag-over');
+}
+function onDragLeave() {
+  document.getElementById('drop-zone').classList.remove('drag-over');
+}
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  addFiles([...e.dataTransfer.files]);
+}
+function onFileSelect(e) {
+  addFiles([...e.target.files]);
+  e.target.value = '';
+}
+
+const ALLOWED_EXT = new Set(['.md','.markdown','.txt','.text','.pdf','.docx','.csv','.json']);
+
+function addFiles(files) {
+  for (const f of files) {
+    const ext = '.' + f.name.split('.').pop().toLowerCase();
+    if (!ALLOWED_EXT.has(ext)) { alert(`未対応の形式: ${f.name}`); continue; }
+    if (importFiles.some(x => x.name === f.name && x.size === f.size)) continue;
+    importFiles.push(f);
+  }
+  renderFileList();
+}
+
+function renderFileList() {
+  const el = document.getElementById('file-list');
+  el.innerHTML = importFiles.map((f, i) => `
+    <div class="file-item">
+      <span style="font-size:16px">${fileIcon(f.name)}</span>
+      <span class="file-item-name">${esc(f.name)}</span>
+      <span class="file-item-size">${fmtSize(f.size)}</span>
+      <span class="file-item-remove" onclick="removeFile(${i})">×</span>
+    </div>`).join('');
+  document.getElementById('btn-do-import').disabled = importFiles.length === 0;
+}
+
+function removeFile(i) {
+  importFiles.splice(i, 1);
+  renderFileList();
+}
+function clearFiles() {
+  importFiles = [];
+  renderFileList();
+  document.getElementById('import-result').style.display = 'none';
+}
+
+async function doImport() {
+  if (!importFiles.length) return;
+  const btn = document.getElementById('btn-do-import');
+  btn.disabled = true;
+  btn.textContent = 'インポート中...';
+
+  const formData = new FormData();
+  for (const f of importFiles) formData.append('files', f);
+
+  const res = document.getElementById('import-result');
+  res.style.display = 'none';
+
+  try {
+    const resp = await fetch('/api/import', { method: 'POST', body: formData });
+    const data = await resp.json();
+
+    const fileLines = data.files.map(f => {
+      if (f.status === 'ok') return `✓ ${esc(f.file)}: ${f.inserted}件インポート${f.skipped > 0 ? ` (${f.skipped}件重複スキップ)` : ''}`;
+      return `✗ ${esc(f.file)}: ${esc(f.message)}`;
+    }).join('<br>');
+
+    res.className = 'import-result ' + (data.inserted > 0 ? 'success' : 'error');
+    res.innerHTML = `<strong>${data.inserted}件インポート完了</strong> (${data.skipped}件スキップ)<br>${fileLines}
+      ${data.inserted > 0 ? `<div style="margin-top:12px">
+        <button class="btn btn-primary" onclick="startProcessing()" style="font-size:12px;padding:6px 12px">
+          🔄 要約・分類・Embedding処理する
+        </button>
+        <span style="color:var(--text3);font-size:11px;margin-left:8px">（Claude APIを使用 · 数分〜数十分かかります）</span>
+      </div>` : ''}`;
+    res.style.display = 'block';
+
+    importFiles = [];
+    renderFileList();
+    loadStats();
+  } catch (e) {
+    res.className = 'import-result error';
+    res.textContent = 'エラー: ' + e.message;
+    res.style.display = 'block';
+  }
+
+  btn.textContent = 'インポート';
+  btn.disabled = false;
+}
+
+async function startProcessing() {
+  const res = document.getElementById('import-result');
+  const resp = await fetch('/api/process', { method: 'POST' });
+  const data = await resp.json();
+
+  if (data.message === 'nothing_to_process') {
+    res.innerHTML += '<br><span style="color:var(--text3)">処理対象なし（すべて処理済み）</span>';
+    return;
+  }
+  if (data.message === 'already_running') {
+    res.innerHTML += '<br><span style="color:#f59e0b">処理は既に実行中です</span>';
+    return;
+  }
+
+  // プログレスバーを表示
+  res.innerHTML += `
+    <div class="process-bar-wrap" id="process-wrap">
+      <div class="process-bar-label">
+        <span id="process-label">処理中... 0 / ${data.total}件</span>
+        <span id="process-pct">0%</span>
+      </div>
+      <div class="process-bar"><div class="process-bar-fill" id="process-fill" style="width:0%"></div></div>
+    </div>`;
+
+  processTimer = setInterval(pollProcessStatus, 3000);
+}
+
+async function pollProcessStatus() {
+  try {
+    const data = await api('/api/process/status');
+    const pct = data.total > 0 ? Math.round(data.progress / data.total * 100) : 0;
+    const fill = document.getElementById('process-fill');
+    const label = document.getElementById('process-label');
+    const pctEl = document.getElementById('process-pct');
+    if (fill) fill.style.width = pct + '%';
+    if (label) label.textContent = `処理中... ${data.progress} / ${data.total}件`;
+    if (pctEl) pctEl.textContent = pct + '%';
+
+    if (data.done) {
+      clearInterval(processTimer); processTimer = null;
+      const wrap = document.getElementById('process-wrap');
+      if (data.error) {
+        if (wrap) wrap.innerHTML = `<span style="color:#f87171">エラー: ${esc(data.error)}</span>`;
+      } else {
+        const r = data.result || {};
+        if (wrap) wrap.innerHTML = `<span style="color:#10b981">✓ 処理完了: ${r.entries_processed || 0}件処理, ${r.sessions_created || 0}セッション生成, $${(r.cost?.estimated_cost_usd || 0).toFixed(3)}</span>`;
+        loadStats();
+      }
+    }
+  } catch(e) {}
+}
+
+function fileIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  return {md:'📝', markdown:'📝', txt:'📄', text:'📄', pdf:'📋', docx:'📘', csv:'📊', json:'📦'}[ext] || '📄';
+}
+function fmtSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
 }
 
 // ─── Keyboard ────────────────────────────────────
