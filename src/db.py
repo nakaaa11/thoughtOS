@@ -166,7 +166,7 @@ class ThoughtDB:
         sql = """
             SELECT * FROM thought_entries
             WHERE created_at >= %(start)s AND created_at < %(end)s
-            ORDER BY created_at
+            ORDER BY created_at DESC
             LIMIT %(limit)s
         """
         rows = conn.execute(sql, {"start": start, "end": end, "limit": limit}).fetchall()

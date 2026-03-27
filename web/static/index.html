@@ -495,12 +495,17 @@ function renderCurrentEntries() {
     <div class="results-grid">${sorted.map(renderCard).join('')}</div>`;
 }
 
+function toTs(iso) {
+  if (!iso) return 0;
+  return new Date(iso).getTime() || 0;
+}
+
 function sortEntries(entries, mode) {
   switch (mode) {
     case 'date-asc':
-      return entries.sort((a, b) => (a.created_at || '') < (b.created_at || '') ? -1 : 1);
+      return entries.sort((a, b) => toTs(a.created_at) - toTs(b.created_at));
     case 'date-desc':
-      return entries.sort((a, b) => (a.created_at || '') > (b.created_at || '') ? -1 : 1);
+      return entries.sort((a, b) => toTs(b.created_at) - toTs(a.created_at));
     case 'title-asc':
       return entries.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'ja'));
     case 'title-desc':
@@ -509,7 +514,7 @@ function sortEntries(entries, mode) {
       return entries.sort((a, b) => {
         const order = { claude: 0, google_search: 1, google_browse: 2 };
         const diff = (order[a.source_type] ?? 9) - (order[b.source_type] ?? 9);
-        return diff !== 0 ? diff : ((a.created_at || '') > (b.created_at || '') ? -1 : 1);
+        return diff !== 0 ? diff : toTs(b.created_at) - toTs(a.created_at);
       });
     default:
       return entries;
