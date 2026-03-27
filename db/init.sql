@@ -54,6 +54,10 @@ CREATE INDEX idx_entries_source_type ON thought_entries(source_type);
 -- 重複防止
 CREATE UNIQUE INDEX idx_entries_source_unique ON thought_entries(source_type, source_id);
 
+-- ファイルインポート重複防止（file_hash が設定されている場合のみ）
+CREATE UNIQUE INDEX IF NOT EXISTS idx_entries_file_hash
+    ON thought_entries(file_hash) WHERE file_hash IS NOT NULL;
+
 -- ベクトル類似検索
 CREATE INDEX idx_entries_embedding ON thought_entries
     USING hnsw(embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);

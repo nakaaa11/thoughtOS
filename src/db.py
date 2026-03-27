@@ -20,21 +20,32 @@ class ThoughtDB:
     def insert_entry(self, entry: dict) -> str | None:
         """エントリを挿入。重複時はスキップ。戻り値: UUID文字列 or None"""
         conn = self._get_conn()
+
+        # file_hash による重複チェック（ファイルインポート時）
+        file_hash = entry.get("file_hash")
+        if file_hash:
+            existing = conn.execute(
+                "SELECT id FROM thought_entries WHERE file_hash = %s", (file_hash,)
+            ).fetchone()
+            if existing:
+                conn.commit()
+                return None
+
         row = conn.execute(
             """
             INSERT INTO thought_entries
                 (source_type, source_id, title, content, summary, category,
                  tags, thinking_pattern, embedding, source_metadata,
-                 created_at, updated_at)
+                 created_at, updated_at, file_hash)
             VALUES
                 (%(source_type)s, %(source_id)s, %(title)s, %(content)s,
                  %(summary)s, %(category)s, %(tags)s, %(thinking_pattern)s,
                  %(embedding)s, %(source_metadata)s,
-                 %(created_at)s, %(updated_at)s)
+                 %(created_at)s, %(updated_at)s, %(file_hash)s)
             ON CONFLICT (source_type, source_id) DO NOTHING
             RETURNING id
             """,
-            entry,
+            {**entry, "file_hash": file_hash},
         ).fetchone()
         conn.commit()
         return str(row[0]) if row else None

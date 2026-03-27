@@ -14,6 +14,7 @@ class RawEntry:
     created_at: str  # ISO 8601
     updated_at: str | None
     source_metadata: dict[str, Any] = field(default_factory=dict)
+    file_hash: str | None = None  # ファイルインポート時のみ設定（重複検出用）
 
 
 class BaseParser:
