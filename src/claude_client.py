@@ -42,7 +42,7 @@ class ClaudeClient:
 
                 return text
 
-            except (anthropic.RateLimitError, anthropic.APIConnectionError, anthropic.OverloadedError):
+            except (anthropic.RateLimitError, anthropic.APIConnectionError, anthropic.InternalServerError):
                 wait = 2 ** (attempt + 1)
                 time.sleep(wait)
             except json.JSONDecodeError:
